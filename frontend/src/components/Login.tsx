@@ -3,6 +3,13 @@ import { Card } from './Card';
 import { Button } from './Button';
 import './Login.css';
 
+export interface PatientUser {
+    email: string;
+    name: string;
+    age: number;
+    condition: string;
+}
+
 interface LoginProps {
     onLogin: (email: string) => void;
 }
@@ -25,6 +32,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             setError('Passwords do not match');
             return;
         }
+        
         if (email.includes('@') && password.length >= 6) {
             onLogin(email);
         } else {
@@ -43,7 +51,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <Card color="white" padding="large">
                     <h2 className="login__title">{isRegister ? 'Create Account' : 'Welcome Back'}</h2>
                     <p className="login__subtitle">
-                        {isRegister ? 'Sign up to start managing care' : 'Sign in to continue'}
+                        {isRegister ? 'Sign up to manage your recovery journey' : 'Sign in to view your dashboard'}
                     </p>
                     {error && <div className="login__error">{error}</div>}
                     <form onSubmit={handleSubmit} className="login__form">
