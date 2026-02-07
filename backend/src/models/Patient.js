@@ -22,6 +22,12 @@ condition: {
 type: String,
 default: ""
 },
+caregiverPhone:{
+    type: String,
+    required:true,
+    unique:true,
+    match: [/^[6-9]\d{9}$/, "Invalid phone number"],
+},
 createdAt: {
 type: Date,
 default: Date.now
