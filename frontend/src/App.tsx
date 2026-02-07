@@ -50,15 +50,17 @@ const loadSession = (): SessionData | null => {
 
 const clearSession = () => {
   localStorage.removeItem(SESSION_KEY);
-  localStorage.removeItem(DATA_KEY);
+  // Note: We keep user-specific data in localStorage so they can return to it
+  // Each user's data is stored with their patientId as the key
 };
 
-const saveData = (data: AppData) => {
-  localStorage.setItem(DATA_KEY, JSON.stringify(data));
+const saveData = (data: AppData, userId: string) => {
+  localStorage.setItem(`${DATA_KEY}_${userId}`, JSON.stringify(data));
 };
 
-const loadData = (): AppData | null => {
-  const stored = localStorage.getItem(DATA_KEY);
+const loadData = (userId: string | null): AppData | null => {
+  if (!userId) return null;
+  const stored = localStorage.getItem(`${DATA_KEY}_${userId}`);
   if (!stored) return null;
   try {
     return JSON.parse(stored);
@@ -120,19 +122,10 @@ function App() {
   const [currentUser, setCurrentUser] = useState<PatientUser | null>(null);
   const [patientId, setPatientId] = useState<string | null>(null);
   
-  // Shared state for all data - initialize from localStorage or defaults
-  const [medicines, setMedicines] = useState<Medicine[]>(() => {
-    const data = loadData();
-    return data?.medicines ?? getMedicines();
-  });
-  const [symptoms, setSymptoms] = useState<SymptomEntry[]>(() => {
-    const data = loadData();
-    return data?.symptoms ?? getSymptomLogs();
-  });
-  const [tasks, setTasks] = useState<Task[]>(() => {
-    const data = loadData();
-    return data?.tasks ?? getTasks();
-  });
+  // Shared state for all data - will be loaded after session restoration
+  const [medicines, setMedicines] = useState<Medicine[]>([]);
+  const [symptoms, setSymptoms] = useState<SymptomEntry[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
 
   // Restore session on app load
   useEffect(() => {
@@ -144,15 +137,28 @@ function App() {
       setPatientId(session.patientId);
       setProfileComplete(true);
       setIsLoggedIn(true);
+      
+      // Load user-specific data
+      const userData = loadData(session.patientId);
+      if (userData) {
+        setMedicines(userData.medicines);
+        setSymptoms(userData.symptoms);
+        setTasks(userData.tasks);
+      } else {
+        // New user - load placeholder data
+        setMedicines(getMedicines());
+        setSymptoms(getSymptomLogs());
+        setTasks(getTasks());
+      }
     }
   }, []);
 
   // Persist data whenever it changes
   useEffect(() => {
-    if (isLoggedIn && profileComplete) {
-      saveData({ medicines, symptoms, tasks });
+    if (isLoggedIn && profileComplete && patientId) {
+      saveData({ medicines, symptoms, tasks }, patientId);
     }
-  }, [medicines, symptoms, tasks, isLoggedIn, profileComplete]);
+  }, [medicines, symptoms, tasks, isLoggedIn, profileComplete, patientId]);
 
   const handleLogin = (email: string, token: string) => {
     setUserEmail(email);
@@ -169,6 +175,14 @@ function App() {
     setPatientId(id);
     setProfileComplete(true);
     
+    // Load placeholder data for new user
+    const existingData = loadData(id);
+    if (!existingData) {
+      setMedicines(getMedicines());
+      setSymptoms(getSymptomLogs());
+      setTasks(getTasks());
+    }
+    
     // Save session to localStorage
     const token = getToken();
     if (token) {
@@ -179,20 +193,26 @@ function App() {
   const handleLogout = () => {
     setCurrentUser(null);
     setIsLoggedIn(false);
-    // Reset data on logout
-    setMedicines(getMedicines());
-    setSymptoms(getSymptomLogs());
-    setTasks(getTasks());
+    // Reset data on logout to empty arrays
+    setMedicines([]);
+    setSymptoms([]);
+    setTasks([]);
     setProfileComplete(false);
     setUserEmail('');
     setPatientId(null);
     setToken(null);
-    clearSession(); // Clear persisted session
+    clearSession(); // Clear persisted session (but not user data)
     setCurrentPage('dashboard');
   };
 
   const handleUpdateProfile = (updatedUser: PatientUser) => {
     setCurrentUser(updatedUser);
+    
+    // Update session storage with new profile data
+    const token = getToken();
+    if (token && patientId) {
+      saveSession({ token, email: userEmail, user: updatedUser, patientId });
+    }
   };
 
   if (!isLoggedIn) {
@@ -239,6 +259,7 @@ function App() {
           </header>
           {currentPage === 'dashboard' && (
             <Dashboard 
+              key={`dashboard-${medicines.length}-${symptoms.length}-${tasks.length}`}
               patient={currentUser} 
               patientId={patientId}
               medicines={medicines}
@@ -258,6 +279,7 @@ function App() {
               patientId={patientId}
               symptoms={symptoms}
               setSymptoms={setSymptoms}
+              patientProfile={currentUser}
             />
           )}
           {currentPage === 'tasks' && (

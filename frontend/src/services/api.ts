@@ -62,11 +62,12 @@ export interface PatientData {
     age: number;
     gender: string;
     condition: string;
+    caregiverPhone: string;
     createdAt: string;
 }
 
 export const patientApi = {
-    create: (data: { name: string; age: number; gender: string; condition: string }) =>
+    create: (data: { name: string; age: number; gender: string; condition: string; caregiverPhone: string }) =>
         request<PatientData>('/patients', {
             method: 'POST',
             body: JSON.stringify(data),

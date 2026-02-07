@@ -241,3 +241,95 @@
         padding: var(--spacing-sm);
     }
 }
+
+/* ─── Voice Input ──────────────────────────────────── */
+.medicine-tracker__voice-section {
+    margin-bottom: var(--spacing-lg);
+}
+
+.medicine-tracker__voice-row {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+    margin-top: var(--spacing-sm);
+}
+
+.medicine-tracker__voice-input {
+    flex: 1;
+}
+
+.medicine-tracker__mic-btn {
+    width: 48px;
+    height: 48px;
+    border: 2px solid var(--color-dark);
+    border-radius: var(--radius-md);
+    background: var(--color-white);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-base);
+    flex-shrink: 0;
+}
+
+.medicine-tracker__mic-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 3px 3px 0 var(--color-dark);
+}
+
+.medicine-tracker__mic-btn--active {
+    background: var(--color-pink);
+    animation: mic-glow 1.2s ease-in-out infinite;
+}
+
+.medicine-tracker__mic-pulse {
+    color: #e53e3e;
+    font-size: 24px;
+    animation: pulse-dot 1s ease-in-out infinite;
+}
+
+@keyframes mic-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.3); }
+    50% { box-shadow: 0 0 0 8px rgba(229, 62, 62, 0); }
+}
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+.medicine-tracker__voice-fill-btn {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 2px solid var(--color-dark);
+    border-radius: var(--radius-md);
+    background: var(--color-blue);
+    color: var(--color-dark);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    font-family: var(--font-family);
+    cursor: pointer;
+    transition: var(--transition-base);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.medicine-tracker__voice-fill-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 3px 3px 0 var(--color-dark);
+}
+
+.medicine-tracker__voice-status {
+    margin-top: var(--spacing-sm);
+    font-size: var(--font-size-sm);
+    color: #e53e3e;
+    font-weight: var(--font-weight-semibold);
+    animation: pulse-dot 1s ease-in-out infinite;
+}
+
+.medicine-tracker__voice-hint {
+    margin-top: var(--spacing-xs, 4px);
+    font-size: var(--font-size-sm);
+    color: var(--color-gray-400);
+    font-style: italic;
+}

@@ -1,10 +1,49 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Card } from './Card';
 import { Button } from './Button';
 import { Badge } from './Badge';
 import { medicineApi, type MedicineData } from '../services/api';
 import type { Medicine } from './data/medicineData';
 import './MedicineTracker.css';
+
+//Web Speech API
+function useSpeechToText() {
+    const [isListening, setIsListening] = useState(false);
+    const [transcript, setTranscript] = useState('');
+    const recognitionRef = useRef<SpeechRecognition | null>(null);
+
+    const isSupported = typeof window !== 'undefined' &&
+        ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+
+    const startListening = useCallback(() => {
+        if (!isSupported) return;
+
+        const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognitionCtor) return;
+        const recognition = new SpeechRecognitionCtor();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.continuous = false;
+
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+            const text = event.results[0][0].transcript;
+            setTranscript(text);
+        };
+
+        recognition.onend = () => setIsListening(false);
+        recognition.onerror = () => setIsListening(false);
+        recognitionRef.current = recognition;
+        recognition.start();
+        setIsListening(true);
+    }, [isSupported]);
+
+    const stopListening = useCallback(() => {
+        recognitionRef.current?.stop();
+        setIsListening(false);
+    }, []);
+
+    return { isListening, transcript, setTranscript, startListening, stopListening, isSupported };
+}
 
 interface MedicineTrackerProps {
     patientId: string | null;
@@ -17,6 +56,67 @@ export const MedicineTracker: React.FC<MedicineTrackerProps> = ({ patientId, med
     const [dosage, setDosage] = useState('');
     const [timesPerDay, setTimesPerDay] = useState('1');
     const [loading, setLoading] = useState(false);
+    const [voiceText, setVoiceText] = useState('');
+    const { isListening, transcript, setTranscript, startListening, stopListening, isSupported } = useSpeechToText();
+
+    useEffect(() => {
+        if (transcript) {
+            setVoiceText(transcript);
+            parseAndFillFields(transcript);
+            setTranscript('');
+        }
+    }, [transcript, setTranscript]);
+    const parseAndFillFields = (text: string) => {
+        const raw = text.trim().toLowerCase();
+        const dosageRegex = /(\d+\.?\d*)\s*(mg|ml|mcg|g|iu|units?|tablets?|capsules?|drops?)/i;
+        const dosageMatch = raw.match(dosageRegex);
+        let extractedDosage = '';
+        if (dosageMatch) {
+            extractedDosage = `${dosageMatch[1]}${dosageMatch[2].replace(/s$/, '')}`;
+        }
+        let extractedFreq = '1';
+        const freqPatterns: [RegExp, string][] = [
+            [/\b(4\s*x|four times|4 times)\b/i, '4'],
+            [/\b(thrice|3\s*x|three times|3 times)\b/i, '3'],
+            [/\b(twice|2\s*x|two times|2 times)\b/i, '2'],
+            [/\bmorning\s+(and|&)\s+(night|evening)\b/i, '2'],
+            [/\b(once|1\s*x|one time|1 time)\b/i, '1'],
+        ];
+        for (const [pattern, val] of freqPatterns) {
+            if (pattern.test(raw)) {
+                extractedFreq = val;
+                break;
+            }
+        }
+        let nameText = raw;
+        if (dosageMatch) {
+            nameText = nameText.replace(dosageRegex, '');
+        }
+        nameText = nameText
+            .replace(/\b(once|twice|thrice|one time|two times|three times|four times)\b/gi, '')
+            .replace(/\b\d\s*x\s*(a|per)?\s*(day|daily)?\b/gi, '')
+            .replace(/\b\d\s*times?\s*(a|per)?\s*(day|daily)?\b/gi, '')
+            .replace(/\b(a|per|every)\s*(day|daily|morning|night|evening|afternoon)\b/gi, '')
+            .replace(/\b(daily|morning|night|evening|afternoon)\b/gi, '')
+            .replace(/\b(and|for|in|the|take|times?)\b/gi, '')
+            .replace(/\s{2,}/g, ' ')
+            .trim();
+        const extractedName = nameText
+            .split(' ')
+            .filter(Boolean)
+            .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+            .join(' ');
+
+        if (extractedName) setMedicineName(extractedName);
+        if (extractedDosage) setDosage(extractedDosage);
+        setTimesPerDay(extractedFreq);
+    };
+
+    const handleVoiceFill = () => {
+        if (!voiceText.trim()) return;
+        parseAndFillFields(voiceText);
+        setVoiceText('');
+    };
 
     const mapApiToLocal = (m: MedicineData): Medicine => ({
         id: m._id,
@@ -27,16 +127,17 @@ export const MedicineTracker: React.FC<MedicineTrackerProps> = ({ patientId, med
     });
 
     const fetchMedicines = useCallback(async () => {
-        if (!patientId || patientId.startsWith('local-')) return;
+        if (!patientId || patientId.startsWith('local-') || medicines.length > 0) return;
+        
         try {
             const data = await medicineApi.getByPatient(patientId);
             if (data.length > 0) {
                 setMedicines(data.map(mapApiToLocal));
             }
         } catch {
-            // Keep local data
+            
         }
-    }, [patientId, setMedicines]);
+    }, [patientId, medicines.length, setMedicines]);
 
     useEffect(() => {
         fetchMedicines();
@@ -68,7 +169,6 @@ export const MedicineTracker: React.FC<MedicineTrackerProps> = ({ patientId, med
                 });
                 setMedicines(prev => [...prev, mapApiToLocal(med)]);
             } catch {
-                // Fallback to local-only add
                 const newMedicine: Medicine = {
                     id: Date.now().toString(),
                     name: medicineName,
@@ -97,13 +197,13 @@ export const MedicineTracker: React.FC<MedicineTrackerProps> = ({ patientId, med
     };
 
     const handleMarkStatus = (id: string, status: 'taken' | 'missed') => {
-        setMedicines(medicines.map(med =>
+        setMedicines(prev => prev.map(med =>
             med.id === id ? { ...med, status } : med
         ));
     };
 
     const handleRemoveMedicine = (id: string) => {
-        setMedicines(medicines.filter(med => med.id !== id));
+        setMedicines(prev => prev.filter(med => med.id !== id));
     };
 
     const totalMedicines = medicines.length;
@@ -117,6 +217,46 @@ export const MedicineTracker: React.FC<MedicineTrackerProps> = ({ patientId, med
             <section className="medicine-tracker__section">
                 <Card color="blue" padding="large">
                     <h2 className="medicine-tracker__title"> Add Medicine</h2>
+                    {isSupported && (
+                        <div className="medicine-tracker__voice-section">
+                            <label className="medicine-tracker__label"> Speak Medicine Details</label>
+                            <div className="medicine-tracker__voice-row">
+                                <input
+                                    type="text"
+                                    value={voiceText}
+                                    onChange={(e) => setVoiceText(e.target.value)}
+                                    className="medicine-tracker__input medicine-tracker__voice-input"
+                                    placeholder='Try: "Paracetamol 500mg 2x a day"'
+                                />
+                                <button
+                                    type="button"
+                                    onClick={isListening ? stopListening : startListening}
+                                    className={`medicine-tracker__mic-btn ${isListening ? 'medicine-tracker__mic-btn--active' : ''}`}
+                                    title={isListening ? 'Stop listening' : 'Start voice input'}
+                                >
+                                    {isListening ? (
+                                        <span className="medicine-tracker__mic-pulse">●</span>
+                                    ) : '🎤'}
+                                </button>
+                                {voiceText && (
+                                    <button
+                                        type="button"
+                                        onClick={handleVoiceFill}
+                                        className="medicine-tracker__voice-fill-btn"
+                                    >
+                                        Re-parse
+                                    </button>
+                                )}
+                            </div>
+                            {isListening && (
+                                <p className="medicine-tracker__voice-status">Listening… speak now</p>
+                            )}
+                            <p className="medicine-tracker__voice-hint">
+                                Say something like: "Aspirin 100mg twice a day" 
+                            </p>
+                        </div>
+                    )}
+
                     <form onSubmit={handleAddMedicine} className="medicine-tracker__form">
                         <div className="medicine-tracker__form-group">
                             <label className="medicine-tracker__label">Medicine Name</label>
