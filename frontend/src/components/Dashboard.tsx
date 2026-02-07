@@ -1,44 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { Card } from './Card';
 import { StatCard } from './StatCard';
 import { Badge } from './Badge';
 import { ListItem } from './ListItem';
 import type { PatientUser } from './Login';
-import { getMedicines, type Medicine } from './data/medicineData';
-import { getSymptomLogs, type SymptomEntry } from './data/symptomData';
-import { getTasks, categoryIcons, type Task } from './data/taskData';
+import type { Medicine } from './data/medicineData';
+import type { SymptomEntry } from './data/symptomData';
+import { categoryIcons, type Task } from './data/taskData';
 import './Dashboard.css';
 
 interface DashboardProps {
     patient: PatientUser | null;
+    patientId: string | null;
+    medicines: Medicine[];
+    symptoms: SymptomEntry[];
+    tasks: Task[];
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ patient }) => {
-    const [medicines, setMedicines] = useState<Medicine[]>([]);
-    const [tasks, setTasks] = useState<Task[]>([]);
-    const [latestSymptom, setLatestSymptom] = useState<SymptomEntry | null>(null);
-
-    useEffect(() => {
-        setMedicines(getMedicines());
-        setTasks(getTasks());
-        const symptoms = getSymptomLogs();
-        if (symptoms.length > 0) {
-            setLatestSymptom(symptoms[0]);
-        }
-    }, []);
-    useEffect(() => {
-        const handleFocus = () => {
-            setMedicines(getMedicines());
-            setTasks(getTasks());
-            const symptoms = getSymptomLogs();
-            if (symptoms.length > 0) {
-                setLatestSymptom(symptoms[0]);
-            }
-        };
-
-        window.addEventListener('focus', handleFocus);
-        return () => window.removeEventListener('focus', handleFocus);
-    }, []);
+export const Dashboard: React.FC<DashboardProps> = ({ patient, patientId, medicines, symptoms, tasks }) => {
+    const latestSymptom = symptoms.length > 0 ? symptoms[0] : null;
 
     const missedMedicines = medicines.filter(m => m.status === 'missed').length;
     const takenCount = medicines.filter(m => m.status === 'taken').length;

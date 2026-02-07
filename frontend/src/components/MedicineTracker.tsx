@@ -1,29 +1,96 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card } from './Card';
 import { Button } from './Button';
 import { Badge } from './Badge';
-import { getMedicines, type Medicine } from './data/medicineData';
+import { medicineApi, type MedicineData } from '../services/api';
+import type { Medicine } from './data/medicineData';
 import './MedicineTracker.css';
 
-export const MedicineTracker: React.FC = () => {
-    const [medicines, setMedicines] = useState<Medicine[]>(() => getMedicines());
+interface MedicineTrackerProps {
+    patientId: string | null;
+    medicines: Medicine[];
+    setMedicines: React.Dispatch<React.SetStateAction<Medicine[]>>;
+}
+
+export const MedicineTracker: React.FC<MedicineTrackerProps> = ({ patientId, medicines, setMedicines }) => {
     const [medicineName, setMedicineName] = useState('');
     const [dosage, setDosage] = useState('');
     const [timesPerDay, setTimesPerDay] = useState('1');
+    const [loading, setLoading] = useState(false);
 
-    const handleAddMedicine = (e: React.FormEvent) => {
+    const mapApiToLocal = (m: MedicineData): Medicine => ({
+        id: m._id,
+        name: m.name,
+        dosage: m.dosage,
+        schedule: m.schedule.join(', '),
+        status: 'pending',
+    });
+
+    const fetchMedicines = useCallback(async () => {
+        if (!patientId || patientId.startsWith('local-')) return;
+        try {
+            const data = await medicineApi.getByPatient(patientId);
+            if (data.length > 0) {
+                setMedicines(data.map(mapApiToLocal));
+            }
+        } catch {
+            // Keep local data
+        }
+    }, [patientId, setMedicines]);
+
+    useEffect(() => {
+        fetchMedicines();
+    }, [fetchMedicines]);
+
+    const handleAddMedicine = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!medicineName || !dosage) return;
 
-        const newMedicine: Medicine = {
-            id: Date.now().toString(),
-            name: medicineName,
-            dosage: dosage,
-            schedule: `${timesPerDay}x/day`,
-            status: 'pending',
-        };
+        const scheduleArr = Array.from({ length: parseInt(timesPerDay) }, (_, i) => {
+            const hour = 8 + Math.floor((i * 12) / parseInt(timesPerDay));
+            return `${hour.toString().padStart(2, '0')}:00`;
+        });
 
-        setMedicines([...medicines, newMedicine]);
+        if (patientId && !patientId.startsWith('local-')) {
+            setLoading(true);
+            try {
+                const today = new Date().toISOString().split('T')[0];
+                const endDate = new Date();
+                endDate.setMonth(endDate.getMonth() + 1);
+
+                const med = await medicineApi.add({
+                    patientId,
+                    name: medicineName,
+                    dosage,
+                    schedule: scheduleArr,
+                    startDate: today,
+                    endDate: endDate.toISOString().split('T')[0],
+                });
+                setMedicines(prev => [...prev, mapApiToLocal(med)]);
+            } catch {
+                // Fallback to local-only add
+                const newMedicine: Medicine = {
+                    id: Date.now().toString(),
+                    name: medicineName,
+                    dosage: dosage,
+                    schedule: `${timesPerDay}x/day`,
+                    status: 'pending',
+                };
+                setMedicines(prev => [...prev, newMedicine]);
+            } finally {
+                setLoading(false);
+            }
+        } else {
+            const newMedicine: Medicine = {
+                id: Date.now().toString(),
+                name: medicineName,
+                dosage: dosage,
+                schedule: `${timesPerDay}x/day`,
+                status: 'pending',
+            };
+            setMedicines(prev => [...prev, newMedicine]);
+        }
+
         setMedicineName('');
         setDosage('');
         setTimesPerDay('1');
@@ -88,7 +155,9 @@ export const MedicineTracker: React.FC = () => {
                                 <option value="4">4x per day</option>
                             </select>
                         </div>
-                        <Button variant="primary" type="submit">Add Medicine</Button>
+                        <Button variant="primary" type="submit" disabled={loading}>
+                            {loading ? 'Adding...' : 'Add Medicine'}
+                        </Button>
                     </form>
                 </Card>
             </section>

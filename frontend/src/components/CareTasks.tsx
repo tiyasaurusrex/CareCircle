@@ -3,7 +3,7 @@ import { Card } from './Card';
 import { Button } from './Button';
 import { Badge } from './Badge';
 import { StatCard } from './StatCard';
-import { getTasks, categoryIcons, type Task } from './data/taskData';
+import { categoryIcons, type Task } from './data/taskData';
 import './CareTasks.css';
 
 const categoryLabels: Record<string, string> = {
@@ -14,8 +14,13 @@ const categoryLabels: Record<string, string> = {
     medication: 'Med Support'
 };
 
-export const CareTasks: React.FC = () => {
-    const [tasks, setTasks] = useState<Task[]>(() => getTasks());
+interface CareTasksProps {
+    tasks: Task[];
+    setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
+    patientId: string | null;
+}
+
+export const CareTasks: React.FC<CareTasksProps> = ({ tasks, setTasks, patientId }) => {
     const [showForm, setShowForm] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState<string>('all');
