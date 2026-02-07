@@ -1,0 +1,97 @@
+.profile {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: var(--spacing-xl);
+}
+
+.profile__section {
+    margin-bottom: var(--spacing-xl);
+}
+
+.profile__title {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: var(--spacing-lg);
+    color: var(--color-dark);
+}
+
+.profile__info-card,
+.profile__patient-card {
+    display: flex;
+    gap: var(--spacing-xl);
+    align-items: flex-start;
+}
+
+.profile__avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-blue-light);
+    border: 3px solid var(--color-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-dark);
+    text-transform: uppercase;
+    flex-shrink: 0;
+}
+
+.profile__patient-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: var(--radius-full);
+    background-color: var(--color-pink-light);
+    border: 3px solid var(--color-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--font-size-3xl);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-dark);
+    flex-shrink: 0;
+}
+.profile__details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+.profile__info-row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+.profile__label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-gray-600);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.profile__value {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-medium);
+    color: var(--color-dark);
+    text-transform: capitalize;
+}
+.profile__actions {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+@media (max-width: 640px) {
+    .profile {
+        padding: var(--spacing-md);
+    }
+    .profile__info-card,
+    .profile__patient-card {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    .profile__info-row {
+        align-items: center;
+    }
+}
