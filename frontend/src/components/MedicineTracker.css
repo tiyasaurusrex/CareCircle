@@ -1,0 +1,243 @@
+.medicine-tracker {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-xl);
+}
+
+.medicine-tracker__section {
+    margin-bottom: var(--spacing-xl);
+}
+
+.medicine-tracker__title {
+    font-size: var(--font-size-2xl);
+    font-weight: var(--font-weight-semibold);
+    margin-bottom: var(--spacing-lg);
+    color: var(--color-dark);
+}
+.medicine-tracker__form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--spacing-md);
+    align-items: end;
+}
+
+.medicine-tracker__form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.medicine-tracker__label {
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-dark);
+}
+
+.medicine-tracker__input {
+    padding: var(--spacing-md);
+    border: 2px solid var(--color-dark);
+    border-radius: var(--radius-md);
+    font-size: var(--font-size-base);
+    font-family: var(--font-family);
+    background-color: var(--color-white);
+    transition: var(--transition-base);
+    font-weight: var(--font-weight-medium);
+}
+
+.medicine-tracker__input:focus {
+    outline: none;
+    border-color: var(--color-blue);
+    box-shadow: 0 0 0 3px rgba(168, 201, 228, 0.2);
+}
+
+.medicine-tracker__input::placeholder {
+    color: var(--color-gray-400);
+}
+.medicine-tracker__table-container {
+    overflow-x: auto;
+    margin-top: var(--spacing-md);
+}
+
+.medicine-tracker__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--font-size-base);
+}
+
+.medicine-tracker__table thead {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.medicine-tracker__table th {
+    padding: var(--spacing-md);
+    text-align: left;
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-dark);
+    border-bottom: 2px solid var(--color-dark);
+}
+
+.medicine-tracker__table td {
+    padding: var(--spacing-md);
+    border-bottom: 1px solid var(--color-gray-300);
+    color: var(--color-dark);
+}
+
+.medicine-tracker__table-cell--name {
+    font-weight: var(--font-weight-semibold);
+}
+
+.medicine-tracker__table tbody tr:hover {
+    background-color: rgba(0, 0, 0, 0.02);
+}
+.medicine-tracker__actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+}
+
+.medicine-tracker__action-btn {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 2px solid var(--color-dark);
+    border-radius: var(--radius-sm);
+    font-size: var(--font-size-sm);
+    font-weight: var(--font-weight-semibold);
+    cursor: pointer;
+    transition: var(--transition-base);
+    font-family: var(--font-family);
+    white-space: nowrap;
+}
+
+.medicine-tracker__action-btn--taken {
+    background-color: var(--color-green);
+    color: var(--color-dark);
+}
+
+.medicine-tracker__action-btn--taken:hover:not(:disabled) {
+    background-color: var(--color-green-dark);
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 0 var(--color-dark);
+}
+
+.medicine-tracker__action-btn--missed {
+    background-color: var(--color-pink);
+    color: var(--color-dark);
+}
+
+.medicine-tracker__action-btn--missed:hover:not(:disabled) {
+    background-color: var(--color-pink-dark);
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 0 var(--color-dark);
+}
+
+.medicine-tracker__action-btn--delete {
+    background-color: var(--color-gray-200);
+    color: var(--color-dark);
+}
+
+.medicine-tracker__action-btn--delete:hover {
+    background-color: var(--color-gray-300);
+    transform: translateY(-2px);
+    box-shadow: 4px 4px 0 var(--color-dark);
+}
+
+.medicine-tracker__action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+.medicine-tracker__adherence {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: var(--spacing-xl);
+    align-items: center;
+    margin-top: var(--spacing-md);
+}
+
+.medicine-tracker__adherence-stats {
+    text-align: center;
+}
+
+.medicine-tracker__adherence-percentage {
+    font-size: 4rem;
+    font-weight: var(--font-weight-bold);
+    color: var(--color-dark);
+    line-height: 1;
+}
+
+.medicine-tracker__adherence-label {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-semibold);
+    margin-top: var(--spacing-sm);
+    color: var(--color-dark);
+}
+
+.medicine-tracker__adherence-detail {
+    font-size: var(--font-size-base);
+    color: var(--color-gray-600);
+    margin-top: var(--spacing-xs);
+}
+.medicine-tracker__chart {
+    flex: 1;
+}
+
+.medicine-tracker__chart-bar {
+    height: 60px;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: var(--radius-md);
+    border: 2px solid var(--color-dark);
+    overflow: hidden;
+    position: relative;
+}
+
+.medicine-tracker__chart-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--color-green), var(--color-green-light));
+    transition: width 0.5s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: var(--spacing-md);
+    min-width: 60px;
+}
+
+.medicine-tracker__chart-text {
+    font-size: var(--font-size-lg);
+    font-weight: var(--font-weight-bold);
+    color: var(--color-dark);
+}
+@media (max-width: 968px) {
+    .medicine-tracker__form {
+        grid-template-columns: 1fr;
+    }
+
+    .medicine-tracker__adherence {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+
+    .medicine-tracker__table-container {
+        font-size: var(--font-size-sm);
+    }
+
+    .medicine-tracker__actions {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 640px) {
+    .medicine-tracker {
+        padding: var(--spacing-md);
+    }
+
+    .medicine-tracker__adherence-percentage {
+        font-size: 3rem;
+    }
+
+    .medicine-tracker__table {
+        font-size: var(--font-size-sm);
+    }
+
+    .medicine-tracker__table th,
+    .medicine-tracker__table td {
+        padding: var(--spacing-sm);
+    }
+}
