@@ -73,13 +73,13 @@ export const CareTasks: React.FC<CareTasksProps> = ({ tasks, setTasks, patientId
     };
 
     const markComplete = (id: string) => {
-        setTasks(tasks.map(t =>
+        setTasks(prev => prev.map(t =>
             t.id === id ? { ...t, status: 'completed', completedAt: new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) } : t
         ));
     };
 
     const deleteTask = (id: string) => {
-        setTasks(tasks.filter(t => t.id !== id));
+        setTasks(prev => prev.filter(t => t.id !== id));
     };
     const getStatusColor = (status: string) => {
         if (status === 'completed') return 'green';

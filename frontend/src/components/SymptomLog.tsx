@@ -4,6 +4,7 @@ import { Button } from './Button';
 import { Badge } from './Badge';
 import { symptomApi, triageApi, type SymptomData } from '../services/api';
 import type { SymptomEntry } from './data/symptomData';
+import type { PatientUser } from './Login';
 import './SymptomLog.css';
 
 interface TriageResult {
@@ -17,9 +18,10 @@ interface SymptomLogProps {
     patientId: string | null;
     symptoms: SymptomEntry[];
     setSymptoms: React.Dispatch<React.SetStateAction<SymptomEntry[]>>;
+    patientProfile: PatientUser | null;
 }
 
-export const SymptomLog: React.FC<SymptomLogProps> = ({ patientId, symptoms, setSymptoms }) => {
+export const SymptomLog: React.FC<SymptomLogProps> = ({ patientId, symptoms, setSymptoms, patientProfile }) => {
     const [painLevel, setPainLevel] = useState(5);
     const [temperature, setTemperature] = useState('');
     const [bloodPressure, setBloodPressure] = useState('');
@@ -37,7 +39,9 @@ export const SymptomLog: React.FC<SymptomLogProps> = ({ patientId, symptoms, set
     });
 
     const fetchSymptoms = useCallback(async () => {
-        if (!patientId || patientId.startsWith('local-')) return;
+        // Never overwrite existing data - only fetch if we have no symptoms
+        if (!patientId || patientId.startsWith('local-') || symptoms.length > 0) return;
+        
         try {
             const data = await symptomApi.getByPatient(patientId);
             if (data.length > 0) {
@@ -46,7 +50,7 @@ export const SymptomLog: React.FC<SymptomLogProps> = ({ patientId, symptoms, set
         } catch {
             // Keep local data
         }
-    }, [patientId, setSymptoms]);
+    }, [patientId, symptoms.length, setSymptoms]);
 
     useEffect(() => {
         fetchSymptoms();
@@ -154,15 +158,10 @@ export const SymptomLog: React.FC<SymptomLogProps> = ({ patientId, symptoms, set
         };
 
         setLoading(true);
-
-        // Convert Fahrenheit to Celsius for backend triage
         const tempCelsiusForTriage = (tempNum - 32) * 5 / 9;
 
-        // Run triage via backend
         try {
             const triageData = await triageApi.run({ painLevel, temperature: parseFloat(tempCelsiusForTriage.toFixed(1)) });
-
-            // Map backend severity to local status
             let status: 'normal' | 'monitor' | 'consult' = 'normal';
             if (triageData.severity === 'severe') status = 'consult';
             else if (triageData.severity === 'moderate') status = 'monitor';
@@ -182,12 +181,10 @@ export const SymptomLog: React.FC<SymptomLogProps> = ({ patientId, symptoms, set
                 })
             });
         } catch {
-            // Fallback to local triage
             const triage = assessTriage(newEntry, symptoms);
             setTriageResult(triage);
         }
 
-        // Log symptom to backend (convert Fahrenheit to Celsius for DB)
         if (patientId) {
             try {
                 const tempCelsius = (tempNum - 32) * 5 / 9;
@@ -199,12 +196,12 @@ export const SymptomLog: React.FC<SymptomLogProps> = ({ patientId, symptoms, set
                 });
                 newEntry.id = saved._id;
             } catch {
-                // Entry already created locally, continue
+                
             }
         }
 
         setLoading(false);
-        setSymptoms([newEntry, ...symptoms]);
+        setSymptoms(prev => [newEntry, ...prev]);
         setPainLevel(5);
         setTemperature('');
         setBloodPressure('');
@@ -219,13 +216,13 @@ export const SymptomLog: React.FC<SymptomLogProps> = ({ patientId, symptoms, set
     };
 
     const handleGenerateReport = () => {
-        const report = generateDoctorReport(symptoms, triageResult);
+        const report = generateDoctorReport(symptoms, triageResult, patientProfile);
         downloadReport(report);
     };
     const handleContactCaregiver = () => {
         alert('Caregiver contact feature would be implemented here.\n\nPossible integrations:\n- SMS/Email notification\n- In-app messaging\n- Emergency contact list');
     };
-    const generateDoctorReport = (symptoms: SymptomEntry[], triage: TriageResult | null): string => {
+    const generateDoctorReport = (symptoms: SymptomEntry[], triage: TriageResult | null, patient: PatientUser | null): string => {
         const reportDate = new Date().toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
@@ -234,6 +231,17 @@ export const SymptomLog: React.FC<SymptomLogProps> = ({ patientId, symptoms, set
         let report = `PATIENT SYMPTOM REPORT\n`;
         report += `Generated: ${reportDate}\n`;
         report += `${'='.repeat(50)}\n\n`;
+    
+        if (patient) {
+            report += `PATIENT DETAILS\n`;
+            report += `Name: ${patient.name}\n`;
+            report += `Age: ${patient.age} years\n`;
+            report += `Gender: ${patient.gender.charAt(0).toUpperCase() + patient.gender.slice(1)}\n`;
+            report += `Medical Condition: ${patient.condition}\n`;
+            report += `Caregiver Contact: ${patient.caregiverPhone}\n`;
+            report += `${'='.repeat(50)}\n\n`;
+        }
+        
         if (triage) {
             report += `CURRENT TRIAGE STATUS\n`;
             report += `Status: ${triage.status.toUpperCase()}\n`;
@@ -462,7 +470,7 @@ export const SymptomLog: React.FC<SymptomLogProps> = ({ patientId, symptoms, set
             </section>
             <section className="symptom-log__section">
                 <Card color="green" padding="large">
-                    <h2 className="symptom-log__title">📝 Symptom History</h2>
+                    <h2 className="symptom-log__title">Symptom History</h2>
                     <div className="symptom-log__logs-list">
                         {symptoms.slice(0, 6).map((log) => (
                             <div key={log.id} className="symptom-log__log-item">
