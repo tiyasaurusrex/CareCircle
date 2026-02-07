@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './App.css';
 import {
   SideNav,
@@ -12,6 +12,60 @@ import {
 } from './components';
 import type { PatientUser } from './components/Login';
 import type { ProfileData } from './components/ProfileSetup';
+import { setToken, getToken } from './services/api';
+import { getMedicines, type Medicine } from './components/data/medicineData';
+import { getSymptomLogs, type SymptomEntry } from './components/data/symptomData';
+import { getTasks, type Task } from './components/data/taskData';
+
+// Session persistence helpers
+const SESSION_KEY = 'carecircle_session';
+const DATA_KEY = 'carecircle_data';
+
+interface SessionData {
+  token: string;
+  email: string;
+  user: PatientUser;
+  patientId: string;
+}
+
+interface AppData {
+  medicines: Medicine[];
+  symptoms: SymptomEntry[];
+  tasks: Task[];
+}
+
+const saveSession = (data: SessionData) => {
+  localStorage.setItem(SESSION_KEY, JSON.stringify(data));
+};
+
+const loadSession = (): SessionData | null => {
+  const stored = localStorage.getItem(SESSION_KEY);
+  if (!stored) return null;
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return null;
+  }
+};
+
+const clearSession = () => {
+  localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(DATA_KEY);
+};
+
+const saveData = (data: AppData) => {
+  localStorage.setItem(DATA_KEY, JSON.stringify(data));
+};
+
+const loadData = (): AppData | null => {
+  const stored = localStorage.getItem(DATA_KEY);
+  if (!stored) return null;
+  try {
+    return JSON.parse(stored);
+  } catch {
+    return null;
+  }
+};
 
 type Page = 'dashboard' | 'medicines' | 'symptoms' | 'tasks' | 'profile';
 const DashboardIcon = () => (
@@ -64,26 +118,76 @@ function App() {
   const [userEmail, setUserEmail] = useState('');
   const [profileComplete, setProfileComplete] = useState(false);
   const [currentUser, setCurrentUser] = useState<PatientUser | null>(null);
+  const [patientId, setPatientId] = useState<string | null>(null);
+  
+  // Shared state for all data - initialize from localStorage or defaults
+  const [medicines, setMedicines] = useState<Medicine[]>(() => {
+    const data = loadData();
+    return data?.medicines ?? getMedicines();
+  });
+  const [symptoms, setSymptoms] = useState<SymptomEntry[]>(() => {
+    const data = loadData();
+    return data?.symptoms ?? getSymptomLogs();
+  });
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    const data = loadData();
+    return data?.tasks ?? getTasks();
+  });
 
-  const handleLogin = (email: string) => {
+  // Restore session on app load
+  useEffect(() => {
+    const session = loadSession();
+    if (session) {
+      setToken(session.token);
+      setUserEmail(session.email);
+      setCurrentUser(session.user);
+      setPatientId(session.patientId);
+      setProfileComplete(true);
+      setIsLoggedIn(true);
+    }
+  }, []);
+
+  // Persist data whenever it changes
+  useEffect(() => {
+    if (isLoggedIn && profileComplete) {
+      saveData({ medicines, symptoms, tasks });
+    }
+  }, [medicines, symptoms, tasks, isLoggedIn, profileComplete]);
+
+  const handleLogin = (email: string, token: string) => {
     setUserEmail(email);
+    setToken(token);
     setIsLoggedIn(true);
   };
 
-  const handleProfileComplete = (profileData: ProfileData) => {
+  const handleProfileComplete = (profileData: ProfileData, id: string) => {
     const user: PatientUser = {
       email: userEmail,
       ...profileData
     };
     setCurrentUser(user);
+    setPatientId(id);
     setProfileComplete(true);
+    
+    // Save session to localStorage
+    const token = getToken();
+    if (token) {
+      saveSession({ token, email: userEmail, user, patientId: id });
+    }
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
     setIsLoggedIn(false);
+    // Reset data on logout
+    setMedicines(getMedicines());
+    setSymptoms(getSymptomLogs());
+    setTasks(getTasks());
     setProfileComplete(false);
     setUserEmail('');
+    setPatientId(null);
+    setToken(null);
+    clearSession(); // Clear persisted session
     setCurrentPage('dashboard');
   };
 
@@ -131,14 +235,38 @@ function App() {
         <div className="app-container" style={{ flex: 1, height: '100vh', overflowY: 'auto' }}>
           <header className="app-header">
             <h1>CareCircle</h1>
-            <p className="app-subtitle">
-              Home Care Management Dashboard
-            </p>
+            <p className="app-subtitle">Your health companion</p>
           </header>
-          {currentPage === 'dashboard' && <Dashboard patient={currentUser} />}
-          {currentPage === 'medicines' && <MedicineTracker />}
-          {currentPage === 'symptoms' && <SymptomLog />}
-          {currentPage === 'tasks' && <CareTasks />}
+          {currentPage === 'dashboard' && (
+            <Dashboard 
+              patient={currentUser} 
+              patientId={patientId}
+              medicines={medicines}
+              symptoms={symptoms}
+              tasks={tasks}
+            />
+          )}
+          {currentPage === 'medicines' && (
+            <MedicineTracker 
+              patientId={patientId}
+              medicines={medicines}
+              setMedicines={setMedicines}
+            />
+          )}
+          {currentPage === 'symptoms' && (
+            <SymptomLog 
+              patientId={patientId}
+              symptoms={symptoms}
+              setSymptoms={setSymptoms}
+            />
+          )}
+          {currentPage === 'tasks' && (
+            <CareTasks 
+              tasks={tasks}
+              setTasks={setTasks}
+              patientId={patientId}
+            />
+          )}
           {currentPage === 'profile' && <Profile user={currentUser!} onLogout={handleLogout} onUpdateProfile={handleUpdateProfile} />}
         </div>
       </div>
