@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card } from './Card';
 import { Button } from './Button';
+import { authApi } from '../services/api';
 import './Login.css';
 
 export interface PatientUser {
@@ -11,7 +12,7 @@ export interface PatientUser {
 }
 
 interface LoginProps {
-    onLogin: (email: string) => void;
+    onLogin: (email: string, token: string) => void;
 }
 export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     const [isRegister, setIsRegister] = useState(false);
@@ -19,7 +20,9 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [error, setError] = useState('');
-    const handleSubmit = (e: React.FormEvent) => {
+    const [loading, setLoading] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
@@ -32,11 +35,23 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             setError('Passwords do not match');
             return;
         }
-        
-        if (email.includes('@') && password.length >= 6) {
-            onLogin(email);
-        } else {
+
+        if (!email.includes('@') || password.length < 6) {
             setError('Invalid email or password (min 6 characters)');
+            return;
+        }
+
+        setLoading(true);
+        try {
+            if (isRegister) {
+                await authApi.register(email, password);
+            }
+            const data = await authApi.login(email, password);
+            onLogin(email, data.token);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Authentication failed');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -91,8 +106,8 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                             </div>
                         )}
 
-                        <Button variant="primary" type="submit" fullWidth>
-                            {isRegister ? 'Create Account' : 'Sign In'}
+                        <Button variant="primary" type="submit" fullWidth disabled={loading}>
+                            {loading ? 'Please wait...' : isRegister ? 'Create Account' : 'Sign In'}
                         </Button>
                     </form>
                     <div className="login__toggle">
