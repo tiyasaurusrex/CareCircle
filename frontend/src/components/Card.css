@@ -1,0 +1,55 @@
+.card {
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+    transition: all var(--transition-base);
+    overflow: hidden;
+}
+
+.card--clickable {
+    cursor: pointer;
+}
+
+.card--clickable:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.card--clickable:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-md);
+}
+.card--yellow {
+    background-color: var(--color-yellow);
+}
+
+.card--pink {
+    background-color: var(--color-pink);
+}
+
+.card--green {
+    background-color: var(--color-green);
+}
+
+.card--blue {
+    background-color: var(--color-blue);
+}
+
+.card--white {
+    background-color: var(--color-white);
+}
+
+.card--padding-none {
+    padding: 0;
+}
+
+.card--padding-small {
+    padding: var(--spacing-md);
+}
+
+.card--padding-medium {
+    padding: var(--spacing-lg);
+}
+
+.card--padding-large {
+    padding: var(--spacing-xl);
+}
