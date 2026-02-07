@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Card } from './Card';
 import { Button } from './Button';
+import { patientApi } from '../services/api';
 import './Login.css';
 
 export interface ProfileData {
@@ -11,16 +12,18 @@ export interface ProfileData {
 
 interface ProfileSetupProps {
     email: string;
-    onProfileComplete: (profileData: ProfileData) => void;
+    onProfileComplete: (profileData: ProfileData, patientId: string) => void;
 }
 
 export const ProfileSetup: React.FC<ProfileSetupProps> = ({ email, onProfileComplete }) => {
     const [name, setName] = useState('');
     const [age, setAge] = useState('');
+    const [gender, setGender] = useState('other');
     const [condition, setCondition] = useState('');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError('');
 
@@ -35,11 +38,22 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ email, onProfileComp
             return;
         }
 
-        onProfileComplete({
-            name,
-            age: ageNum,
-            condition
-        });
+        setLoading(true);
+        try {
+            const patient = await patientApi.create({
+                name,
+                age: ageNum,
+                gender,
+                condition,
+            });
+            onProfileComplete({ name, age: ageNum, condition }, patient._id);
+        } catch (err) {
+            // Fallback: create local session without database
+            const localPatientId = `local-${Date.now()}`;
+            onProfileComplete({ name, age: ageNum, condition }, localPatientId);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -83,6 +97,18 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ email, onProfileComp
                             />
                         </div>
                         <div className="login__form-group">
+                            <label className="login__label">Gender</label>
+                            <select
+                                value={gender}
+                                onChange={(e) => setGender(e.target.value)}
+                                className="login__input"
+                            >
+                                <option value="male">Male</option>
+                                <option value="female">Female</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div className="login__form-group">
                             <label className="login__label">Medical Condition</label>
                             <input
                                 type="text"
@@ -94,8 +120,8 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ email, onProfileComp
                             />
                         </div>
 
-                        <Button variant="primary" type="submit" fullWidth>
-                            Complete Setup
+                        <Button variant="primary" type="submit" fullWidth disabled={loading}>
+                            {loading ? 'Setting up...' : 'Complete Setup'}
                         </Button>
                     </form>
                 </Card>

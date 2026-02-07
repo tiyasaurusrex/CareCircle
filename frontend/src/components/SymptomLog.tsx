@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card } from './Card';
 import { Button } from './Button';
 import { Badge } from './Badge';
-import { getSymptomLogs, type SymptomEntry } from './data/symptomData';
+import { symptomApi, triageApi, type SymptomData } from '../services/api';
+import type { SymptomEntry } from './data/symptomData';
 import './SymptomLog.css';
 
 interface TriageResult {
@@ -12,15 +13,46 @@ interface TriageResult {
     timestamp: string;
 }
 
-export const SymptomLog: React.FC = () => {
-    const [logs, setLogs] = useState<SymptomEntry[]>(() => getSymptomLogs());
+interface SymptomLogProps {
+    patientId: string | null;
+    symptoms: SymptomEntry[];
+    setSymptoms: React.Dispatch<React.SetStateAction<SymptomEntry[]>>;
+}
+
+export const SymptomLog: React.FC<SymptomLogProps> = ({ patientId, symptoms, setSymptoms }) => {
     const [painLevel, setPainLevel] = useState(5);
     const [temperature, setTemperature] = useState('');
     const [bloodPressure, setBloodPressure] = useState('');
     const [notes, setNotes] = useState('');
     const [triageResult, setTriageResult] = useState<TriageResult | null>(null);
+    const [loading, setLoading] = useState(false);
 
-    const assessTriage = (entry: SymptomEntry, recentLogs: SymptomEntry[]): TriageResult => {
+    const mapApiToLocal = (s: SymptomData): SymptomEntry => ({
+        id: s._id,
+        date: new Date(s.createdAt).toISOString().split('T')[0],
+        time: new Date(s.createdAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        painLevel: s.painLevel,
+        temperature: `${s.temperature}°F`,
+        notes: s.notes || 'No notes',
+    });
+
+    const fetchSymptoms = useCallback(async () => {
+        if (!patientId || patientId.startsWith('local-')) return;
+        try {
+            const data = await symptomApi.getByPatient(patientId);
+            if (data.length > 0) {
+                setSymptoms(data.map(mapApiToLocal));
+            }
+        } catch {
+            // Keep local data
+        }
+    }, [patientId, setSymptoms]);
+
+    useEffect(() => {
+        fetchSymptoms();
+    }, [fetchSymptoms]);
+
+    const assessTriage = (entry: SymptomEntry, recentSymptoms: SymptomEntry[]): TriageResult => {
         const temp = parseFloat(entry.temperature.replace('°F', '')) || 0;
         const pain = entry.painLevel;
         let systolic = 0;
@@ -34,7 +66,7 @@ export const SymptomLog: React.FC = () => {
         const reasons: string[] = [];
         let status: 'normal' | 'monitor' | 'consult' = 'normal';
         if (temp >= 101) {
-            const recentTwoDays = recentLogs.slice(0, 2);
+            const recentTwoDays = recentSymptoms.slice(0, 2);
             const consecutiveFever = recentTwoDays.every(log => {
                 const t = parseFloat(log.temperature.replace('°F', '')) || 0;
                 return t >= 100;
@@ -76,7 +108,7 @@ export const SymptomLog: React.FC = () => {
                 status = 'monitor';
                 reasons.push('Elevated blood pressure');
             }
-            const recentThree = [entry, ...recentLogs.slice(0, 2)];
+            const recentThree = [entry, ...recentSymptoms.slice(0, 2)];
             if (recentThree.length >= 3) {
                 const isIncreasing = recentThree[0].painLevel > recentThree[1].painLevel &&
                     recentThree[1].painLevel > recentThree[2].painLevel;
@@ -107,21 +139,72 @@ export const SymptomLog: React.FC = () => {
             })
         };
     };
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const now = new Date();
+        const tempNum = parseFloat(temperature) || 98.6;
         const newEntry: SymptomEntry = {
             id: Date.now().toString(),
             date: now.toISOString().split('T')[0],
             time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
             painLevel,
-            temperature: temperature || 'Not recorded',
+            temperature: temperature ? `${temperature}°F` : 'Not recorded',
             bloodPressure: bloodPressure || undefined,
             notes: notes || 'No notes',
         };
-        const triage = assessTriage(newEntry, logs);
-        setTriageResult(triage);
-        setLogs([newEntry, ...logs]);
+
+        setLoading(true);
+
+        // Convert Fahrenheit to Celsius for backend triage
+        const tempCelsiusForTriage = (tempNum - 32) * 5 / 9;
+
+        // Run triage via backend
+        try {
+            const triageData = await triageApi.run({ painLevel, temperature: parseFloat(tempCelsiusForTriage.toFixed(1)) });
+
+            // Map backend severity to local status
+            let status: 'normal' | 'monitor' | 'consult' = 'normal';
+            if (triageData.severity === 'severe') status = 'consult';
+            else if (triageData.severity === 'moderate') status = 'monitor';
+
+            const messages = {
+                normal: '✅ All Clear - Vitals Normal',
+                monitor: '⚠️ Monitor Closely',
+                consult: '🚨 Consult Doctor Recommended'
+            };
+
+            setTriageResult({
+                status,
+                message: messages[status],
+                reason: triageData.advice,
+                timestamp: now.toLocaleString('en-US', {
+                    month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                })
+            });
+        } catch {
+            // Fallback to local triage
+            const triage = assessTriage(newEntry, symptoms);
+            setTriageResult(triage);
+        }
+
+        // Log symptom to backend (convert Fahrenheit to Celsius for DB)
+        if (patientId) {
+            try {
+                const tempCelsius = (tempNum - 32) * 5 / 9;
+                const saved = await symptomApi.log({
+                    patientId,
+                    painLevel,
+                    temperature: parseFloat(tempCelsius.toFixed(1)),
+                    notes: notes || 'No notes',
+                });
+                newEntry.id = saved._id;
+            } catch {
+                // Entry already created locally, continue
+            }
+        }
+
+        setLoading(false);
+        setSymptoms([newEntry, ...symptoms]);
         setPainLevel(5);
         setTemperature('');
         setBloodPressure('');
@@ -136,13 +219,13 @@ export const SymptomLog: React.FC = () => {
     };
 
     const handleGenerateReport = () => {
-        const report = generateDoctorReport(logs, triageResult);
+        const report = generateDoctorReport(symptoms, triageResult);
         downloadReport(report);
     };
     const handleContactCaregiver = () => {
         alert('Caregiver contact feature would be implemented here.\n\nPossible integrations:\n- SMS/Email notification\n- In-app messaging\n- Emergency contact list');
     };
-    const generateDoctorReport = (logs: SymptomEntry[], triage: TriageResult | null): string => {
+    const generateDoctorReport = (symptoms: SymptomEntry[], triage: TriageResult | null): string => {
         const reportDate = new Date().toLocaleDateString('en-US', {
             year: 'numeric',
             month: 'long',
@@ -160,8 +243,8 @@ export const SymptomLog: React.FC = () => {
         }
         report += `SYMPTOM HISTORY (Last 7 Days)\n`;
         report += `${'='.repeat(50)}\n\n`;
-        const recentLogs = logs.slice(0, 7);
-        recentLogs.forEach((log, index) => {
+        const recentSymptoms = symptoms.slice(0, 7);
+        recentSymptoms.forEach((log, index) => {
             report += `Entry ${index + 1}: ${log.date} at ${log.time}\n`;
             report += `  Pain Level: ${log.painLevel}/10\n`;
             report += `  Temperature: ${log.temperature}\n`;
@@ -172,9 +255,9 @@ export const SymptomLog: React.FC = () => {
         });
         report += `TREND OBSERVATIONS\n`;
         report += `${'='.repeat(50)}\n`;
-        const avgPain = recentLogs.reduce((sum, log) => sum + log.painLevel, 0) / recentLogs.length;
+        const avgPain = recentSymptoms.reduce((sum, log) => sum + log.painLevel, 0) / recentSymptoms.length;
         report += `Average Pain Level: ${avgPain.toFixed(1)}/10\n`;
-        const tempsWithValues = recentLogs.filter(log => {
+        const tempsWithValues = recentSymptoms.filter(log => {
             const temp = parseFloat(log.temperature.replace('°F', ''));
             return !isNaN(temp);
         });
@@ -273,7 +356,9 @@ export const SymptomLog: React.FC = () => {
                             />
                         </div>
 
-                        <Button variant="primary" type="submit">Save Entry</Button>
+                        <Button variant="primary" type="submit" disabled={loading}>
+                            {loading ? 'Saving...' : 'Save Entry'}
+                        </Button>
                     </form>
                 </Card>
             </section>
@@ -329,7 +414,7 @@ export const SymptomLog: React.FC = () => {
                         <div className="symptom-log__chart-container">
                             <h3 className="symptom-log__chart-title">Pain Trend</h3>
                             <div className="symptom-log__chart">
-                                {logs.slice(0, 7).reverse().map((log) => (
+                                {symptoms.slice(0, 7).reverse().map((log) => (
                                     <div key={log.id} className="symptom-log__chart-bar-wrapper">
                                         <div
                                             className="symptom-log__chart-bar symptom-log__chart-bar--pain"
@@ -350,7 +435,7 @@ export const SymptomLog: React.FC = () => {
                         <div className="symptom-log__chart-container">
                             <h3 className="symptom-log__chart-title">Temperature Trend</h3>
                             <div className="symptom-log__chart">
-                                {logs.slice(0, 7).reverse().map((log) => {
+                                {symptoms.slice(0, 7).reverse().map((log) => {
                                     const temp = parseFloat(log.temperature.replace('°F', '')) || 98.6;
                                     const normalizedHeight = ((temp - 97) / 4) * 100; 
                                     return (
@@ -379,7 +464,7 @@ export const SymptomLog: React.FC = () => {
                 <Card color="green" padding="large">
                     <h2 className="symptom-log__title">📝 Symptom History</h2>
                     <div className="symptom-log__logs-list">
-                        {logs.slice(0, 6).map((log) => (
+                        {symptoms.slice(0, 6).map((log) => (
                             <div key={log.id} className="symptom-log__log-item">
                                 <div className="symptom-log__log-header">
                                     <span className="symptom-log__log-date">{log.date} • {log.time}</span>
