@@ -7,7 +7,9 @@ import './Login.css';
 export interface ProfileData {
     name: string;
     age: number;
+    gender: string;
     condition: string;
+    caregiverPhone: string;
 }
 
 interface ProfileSetupProps {
@@ -20,6 +22,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ email, onProfileComp
     const [age, setAge] = useState('');
     const [gender, setGender] = useState('other');
     const [condition, setCondition] = useState('');
+    const [caregiverPhone, setCaregiverPhone] = useState('');
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
@@ -27,7 +30,7 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ email, onProfileComp
         e.preventDefault();
         setError('');
 
-        if (!name || !age || !condition) {
+        if (!name || !age || !condition || !caregiverPhone) {
             setError('Please fill in all fields');
             return;
         }
@@ -45,12 +48,12 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ email, onProfileComp
                 age: ageNum,
                 gender,
                 condition,
+                caregiverPhone,
             });
-            onProfileComplete({ name, age: ageNum, condition }, patient._id);
+            onProfileComplete({ name, age: ageNum, gender, condition, caregiverPhone }, patient._id);
         } catch (err) {
-            // Fallback: create local session without database
             const localPatientId = `local-${Date.now()}`;
-            onProfileComplete({ name, age: ageNum, condition }, localPatientId);
+            onProfileComplete({ name, age: ageNum, gender, condition, caregiverPhone }, localPatientId);
         } finally {
             setLoading(false);
         }
@@ -116,6 +119,17 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ email, onProfileComp
                                 onChange={(e) => setCondition(e.target.value)}
                                 className="login__input"
                                 placeholder="e.g., Post-Surgery Recovery"
+                                required
+                            />
+                        </div>
+                        <div className="login__form-group">
+                            <label className="login__label">Caregiver's Mobile Number</label>
+                            <input
+                                type="tel"
+                                value={caregiverPhone}
+                                onChange={(e) => setCaregiverPhone(e.target.value)}
+                                className="login__input"
+                                placeholder="e.g., +91 9876543210"
                                 required
                             />
                         </div>
