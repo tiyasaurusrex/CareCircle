@@ -1,3 +1,5 @@
+import dotenv from "dotenv";
+dotenv.config();
 import express from "express";
 import mongoose from "mongoose";
 import authRoutes from "./routes/auth.routes.js";
@@ -16,7 +18,7 @@ app.use(express.json());
 mongoose.connect(process.env.MONGO_URI);
 
 
-app.use("/api", authRoutes);
+app.use("/api/auth", authRoutes);
 app.use("/api", patientRoutes);
 app.use("/api", symptomRoutes);
 app.use("/api", triageRoutes);
