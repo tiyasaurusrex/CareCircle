@@ -314,23 +314,33 @@ export const SymptomLog: React.FC<SymptomLogProps> = ({ patientId, symptoms, set
                             <label className="symptom-log__label">
                                 Pain Level: <span className="symptom-log__pain-value">{painLevel}/10</span>
                             </label>
-                            <div className="symptom-log__slider-container">
-                                <span className="symptom-log__slider-label">1</span>
-                                <input
-                                    type="range"
-                                    min="1"
-                                    max="10"
-                                    value={painLevel}
-                                    onChange={(e) => setPainLevel(parseInt(e.target.value))}
-                                    className="symptom-log__slider"
-                                    style={{
-                                        background: `linear-gradient(to right, 
-                      var(--color-green) 0%, 
-                      var(--color-yellow) 50%, 
-                      var(--color-pink) 100%)`
-                                    }}
-                                />
-                                <span className="symptom-log__slider-label">10</span>
+                            <div className="symptom-log__slider-wrapper">
+                                <div className="symptom-log__slider-container">
+                                    <input
+                                        type="range"
+                                        min="1"
+                                        max="10"
+                                        value={painLevel}
+                                        onChange={(e) => setPainLevel(parseInt(e.target.value))}
+                                        className="symptom-log__slider"
+                                        style={{
+                                            background: `linear-gradient(to right, 
+                          var(--color-green) 0%, 
+                          var(--color-yellow) 50%, 
+                          var(--color-pink) 100%)`
+                                        }}
+                                    />
+                                </div>
+                                <div className="symptom-log__slider-scale">
+                                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                                        <span
+                                            key={num}
+                                            className={`symptom-log__slider-tick ${painLevel === num ? 'symptom-log__slider-tick--active' : ''}`}
+                                        >
+                                            {num}
+                                        </span>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                         <div className="symptom-log__form-group">
