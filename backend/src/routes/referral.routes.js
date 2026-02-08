@@ -1,11 +1,8 @@
 import express from "express";
-import { getReferralAdvice } from "../controllers/referral.controller.js";
-
+import { getReferral } from "../controllers/referral.controller.js";
 
 const router = express.Router();
 
-
-router.post("/referral", getReferralAdvice);
-
+router.post("/referral", getReferral);
 
 export default router;
