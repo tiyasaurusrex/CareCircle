@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import './App.css';
-import Referral from "./Referral";
-
 import {
   SideNav,
   Dashboard,
@@ -71,7 +69,7 @@ const loadData = (userId: string | null): AppData | null => {
   }
 };
 
-type Page = 'dashboard' | 'medicines' | 'symptoms' | 'tasks' | 'profile'  | 'referral';
+type Page = 'dashboard' | 'medicines' | 'symptoms' | 'tasks' | 'profile';
 const DashboardIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="3" width="7" height="9" rx="1"></rect>
@@ -237,15 +235,7 @@ function App() {
     {
       section: 'Tools',
       items: [
-        {
-          id: 'referral',
-          label: 'Referral',
-          icon: <DashboardIcon />, // you can change icon later
-          active: currentPage === 'referral',
-          onClick: () => setCurrentPage('referral')
-        },
         { id: 'profile', label: 'Profile', icon: <ProfileIcon />, active: currentPage === 'profile', onClick: () => setCurrentPage('profile') },
-        
       ]
     }
   ];
@@ -300,7 +290,6 @@ function App() {
             />
           )}
           {currentPage === 'profile' && <Profile user={currentUser!} onLogout={handleLogout} onUpdateProfile={handleUpdateProfile} />}
-          {currentPage === 'referral' && <Referral />}
         </div>
       </div>
     </div>
@@ -308,7 +297,3 @@ function App() {
 }
 
 export default App;
-
-
-
-
