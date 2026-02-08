@@ -71,7 +71,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ patient, patientId, medici
                             ]}
                         />
                         <div className="dashboard__medicine-list">
-                            {medicines.slice(0, 4).map((med) => (
+                            {medicines.map((med) => (
                                 <ListItem
                                     key={med.id}
                                     avatar={<span>💊</span>}

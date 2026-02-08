@@ -8,7 +8,9 @@ export interface PatientUser {
     email: string;
     name: string;
     age: number;
+    gender: string;
     condition: string;
+    caregiverPhone: string;
 }
 
 interface LoginProps {

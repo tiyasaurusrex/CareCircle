@@ -22,6 +22,10 @@ condition: {
 type: String,
 default: ""
 },
+caregiverPhone: {
+type: String,
+default: ""
+},
 createdAt: {
 type: Date,
 default: Date.now

@@ -1,11 +1,29 @@
 # Node dependencies
 node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
-# Environment variables
+# Environment variables 
 .env
+.env.*
+!.env.example
 .env.local
 .env.development
 .env.production
+.env.test
+.env.staging
+
+# Secrets and credentials
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+config/secrets.json
+secrets/
+.secret
 
 # Logs
 logs/
@@ -13,30 +31,77 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
 # OS files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+desktop.ini
 
 # Editor / IDE settings
 .vscode/
+!.vscode/extensions.json
+!.vscode/settings.json.example
 .idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
 
-# Build output (if any)
+# Build output
 dist/
 build/
+out/
+*.tsbuildinfo
 
 # Coverage reports
 coverage/
+.nyc_output/
+*.lcov
+
+# Testing
+.jest/
+.cache/
 
 # Temporary files
 tmp/
 temp/
+*.tmp
+*.bak
+*.swp
 
 # MongoDB local files
 data/
 dump/
+*.mongodb
 
-# Optional: lock files (uncomment if team agrees)
-# package-lock.json
-# yarn.lock
+# Package manager
+.npm/
+.yarn/
+.pnpm-store/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Session files
+sessions/
+*.session
