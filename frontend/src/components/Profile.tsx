@@ -7,11 +7,10 @@ import './Profile.css';
 
 interface ProfileProps {
     user: PatientUser;
-    onLogout: () => void;
     onUpdateProfile: (updatedUser: PatientUser) => void;
 }
 
-export const Profile: React.FC<ProfileProps> = ({ user, onLogout, onUpdateProfile }) => {
+export const Profile: React.FC<ProfileProps> = ({ user, onUpdateProfile }) => {
     const [isEditing, setIsEditing] = useState(false);
     const [editedUser, setEditedUser] = useState<PatientUser>(user);
     const [error, setError] = useState('');
@@ -121,16 +120,6 @@ export const Profile: React.FC<ProfileProps> = ({ user, onLogout, onUpdateProfil
                             </Button>
                         </div>
                     )}
-                </Card>
-            </section>
-            <section className="profile__section">
-                <Card color="white" padding="large">
-                    <h2 className="profile__title">Account Actions</h2>
-                    <div className="profile__actions">
-                        <Button variant="secondary" onClick={onLogout}>
-                            Logout
-                        </Button>
-                    </div>
                 </Card>
             </section>
         </div>
