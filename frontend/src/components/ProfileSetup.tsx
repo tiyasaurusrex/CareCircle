@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card } from './Card';
 import { Button } from './Button';
-import { patientApi } from '../services/api';
+import { getToken } from '../services/api';
 import './Login.css';
 
 export interface ProfileData {
@@ -43,15 +43,34 @@ export const ProfileSetup: React.FC<ProfileSetupProps> = ({ email, onProfileComp
 
         setLoading(true);
         try {
-            const patient = await patientApi.create({
-                name,
-                age: ageNum,
-                gender,
-                condition,
-                caregiverPhone,
+            const token = getToken();
+            const response = await fetch('/api/auth/profile', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                },
+                body: JSON.stringify({
+                    name,
+                    age: ageNum,
+                    gender,
+                    condition,
+                    caregiverPhone,
+                }),
             });
-            onProfileComplete({ name, age: ageNum, gender, condition, caregiverPhone }, patient._id);
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Profile save failed');
+            }
+
+            onProfileComplete(
+                { name, age: ageNum, gender, condition, caregiverPhone },
+                result.data._id
+            );
         } catch (err) {
+            // Fallback: still let the user proceed with a local ID
             const localPatientId = `local-${Date.now()}`;
             onProfileComplete({ name, age: ageNum, gender, condition, caregiverPhone }, localPatientId);
         } finally {

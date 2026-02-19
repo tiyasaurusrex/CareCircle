@@ -132,6 +132,60 @@
     margin-bottom: var(--spacing-lg);
 }
 
+.login__divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: var(--spacing-lg) 0;
+    color: var(--color-gray-500);
+    font-size: var(--font-size-sm);
+}
+
+.login__divider::before,
+.login__divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 2px solid var(--color-gray-200);
+}
+
+.login__divider span {
+    padding: 0 var(--spacing-md);
+}
+
+.login__google-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+    width: 100%;
+    padding: var(--spacing-md);
+    background-color: var(--color-white);
+    border: 2px solid var(--color-gray-300);
+    border-radius: var(--radius-lg);
+    font-size: var(--font-size-base);
+    font-weight: var(--font-weight-semibold);
+    font-family: var(--font-family);
+    color: var(--color-dark);
+    cursor: pointer;
+    transition: var(--transition-base);
+}
+
+.login__google-btn:hover:not(:disabled) {
+    background-color: var(--color-gray-100);
+    border-color: var(--color-gray-400);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.login__google-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.login__google-icon {
+    width: 20px;
+    height: 20px;
+}
+
 @media (max-width: 480px) {
     .login {
         padding: var(--spacing-md);

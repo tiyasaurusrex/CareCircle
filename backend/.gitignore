@@ -4,7 +4,7 @@ package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
-# Environment variables 
+# Environment variables — NEVER commit these
 .env
 .env.*
 !.env.example
@@ -14,16 +14,24 @@ pnpm-lock.yaml
 .env.test
 .env.staging
 
-# Secrets and credentials
+# Firebase Admin SDK service account keys 
+
+src/config/*.json
+*adminsdk*.json
+*serviceAccount*.json
+*service-account*.json
+firebase-adminsdk*.json
+
+# General secrets and credentials
 *.pem
 *.key
 *.cert
 *.crt
 *.p12
 *.pfx
-config/secrets.json
 secrets/
 .secret
+config/secrets.*
 
 # Logs
 logs/
@@ -47,7 +55,6 @@ desktop.ini
 # Editor / IDE settings
 .vscode/
 !.vscode/extensions.json
-!.vscode/settings.json.example
 .idea/
 *.swp
 *.swo
@@ -85,19 +92,17 @@ data/
 dump/
 *.mongodb
 
-# Package manager
+# Package manager caches
 .npm/
 .yarn/
 .pnpm-store/
-
-# Optional npm cache directory
-.npm
-
-# Optional eslint cache
 .eslintcache
 
 # Runtime data
 pids/
+*.pid
+*.seed
+*.pid.lock
 *.pid
 *.seed
 *.pid.lock

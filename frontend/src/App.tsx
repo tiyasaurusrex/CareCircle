@@ -10,7 +10,7 @@ import {
   Profile,
   CareTasks
 } from './components';
-import type { PatientUser } from './components/Login';
+import type { PatientUser, BackendUser } from './components/Login';
 import type { ProfileData } from './components/ProfileSetup';
 import { setToken, getToken } from './services/api';
 import { getMedicines, type Medicine } from './components/data/medicineData';
@@ -160,10 +160,39 @@ function App() {
     }
   }, [medicines, symptoms, tasks, isLoggedIn, profileComplete, patientId]);
 
-  const handleLogin = (email: string, token: string) => {
+  const handleLogin = (email: string, token: string, backendUser: BackendUser) => {
     setUserEmail(email);
     setToken(token);
     setIsLoggedIn(true);
+
+    // If the user already completed their profile, restore it from the DB
+    if (backendUser.profileComplete) {
+      const user: PatientUser = {
+        email: backendUser.email,
+        name: backendUser.name,
+        age: backendUser.age ?? 0,
+        gender: backendUser.gender ?? 'other',
+        condition: backendUser.condition ?? '',
+        caregiverPhone: backendUser.caregiverPhone ?? '',
+      };
+      setCurrentUser(user);
+      setPatientId(backendUser._id);
+      setProfileComplete(true);
+
+      // Load user-specific data
+      const userData = loadData(backendUser._id);
+      if (userData) {
+        setMedicines(userData.medicines);
+        setSymptoms(userData.symptoms);
+        setTasks(userData.tasks);
+      } else {
+        setMedicines(getMedicines());
+        setSymptoms(getSymptomLogs());
+        setTasks(getTasks());
+      }
+
+      saveSession({ token, email, user, patientId: backendUser._id });
+    }
   };
 
   const handleProfileComplete = (profileData: ProfileData, id: string) => {
@@ -289,7 +318,7 @@ function App() {
               patientId={patientId}
             />
           )}
-          {currentPage === 'profile' && <Profile user={currentUser!} onLogout={handleLogout} onUpdateProfile={handleUpdateProfile} />}
+          {currentPage === 'profile' && <Profile user={currentUser!} onUpdateProfile={handleUpdateProfile} />}
         </div>
       </div>
     </div>

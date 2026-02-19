@@ -4,6 +4,7 @@ import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
 import authRoutes from "./routes/auth.routes.js";
+import firebaseAuthRoutes from "./routes/auth.js";
 import patientRoutes from "./routes/patient.routes.js";
 import symptomRoutes from "./routes/symptom.routes.js";
 import triageRoutes from "./routes/triage.routes.js";
@@ -23,6 +24,7 @@ mongoose.connect(process.env.MONGO_URI)
 
 
 app.use("/api/auth", authRoutes);
+app.use("/api/auth", firebaseAuthRoutes);
 app.use("/api", patientRoutes);
 app.use("/api", symptomRoutes);
 app.use("/api", triageRoutes);

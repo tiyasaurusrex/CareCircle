@@ -4,7 +4,8 @@ package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
-# Environment variables (CRITICAL - Never commit these!)
+# Environment variables — NEVER commit these
+# All Firebase API keys and secrets must live in .env
 .env
 .env.*
 !.env.example
@@ -13,6 +14,12 @@ pnpm-lock.yaml
 .env.production
 .env.test
 .env.staging
+
+# Firebase credentials
+*serviceAccount*.json
+*adminsdk*.json
+*service-account*.json
+src/config/*.json
 
 # Build output
 dist/
@@ -49,7 +56,6 @@ coverage/
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
-!.vscode/settings.json.example
 .idea/
 *.swp
 *.swo
@@ -72,13 +78,8 @@ temp/
 *.tmp
 *.bak
 
-# TypeScript
-*.tsbuildinfo
-
-# Optional npm cache directory
+# Package manager caches
 .npm/
-
-# Optional eslint cache
 .eslintcache
 
 # Storybook
