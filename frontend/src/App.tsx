@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import './App.css';
+import Referral from './components/Refferal';
+
 import {
   SideNav,
   Dashboard,
@@ -17,7 +19,6 @@ import { getMedicines, type Medicine } from './components/data/medicineData';
 import { getSymptomLogs, type SymptomEntry } from './components/data/symptomData';
 import { getTasks, type Task } from './components/data/taskData';
 
-// Session persistence helpers
 const SESSION_KEY = 'carecircle_session';
 const DATA_KEY = 'carecircle_data';
 
@@ -50,8 +51,6 @@ const loadSession = (): SessionData | null => {
 
 const clearSession = () => {
   localStorage.removeItem(SESSION_KEY);
-  // Note: We keep user-specific data in localStorage so they can return to it
-  // Each user's data is stored with their patientId as the key
 };
 
 const saveData = (data: AppData, userId: string) => {
@@ -69,7 +68,7 @@ const loadData = (userId: string | null): AppData | null => {
   }
 };
 
-type Page = 'dashboard' | 'medicines' | 'symptoms' | 'tasks' | 'profile';
+type Page = 'dashboard' | 'medicines' | 'symptoms' | 'tasks' | 'profile'  | 'referral';
 const DashboardIcon = () => (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="3" width="7" height="9" rx="1"></rect>
@@ -121,13 +120,10 @@ function App() {
   const [profileComplete, setProfileComplete] = useState(false);
   const [currentUser, setCurrentUser] = useState<PatientUser | null>(null);
   const [patientId, setPatientId] = useState<string | null>(null);
-  
-  // Shared state for all data - will be loaded after session restoration
   const [medicines, setMedicines] = useState<Medicine[]>([]);
   const [symptoms, setSymptoms] = useState<SymptomEntry[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  // Restore session on app load
   useEffect(() => {
     const session = loadSession();
     if (session) {
@@ -138,14 +134,12 @@ function App() {
       setProfileComplete(true);
       setIsLoggedIn(true);
       
-      // Load user-specific data
       const userData = loadData(session.patientId);
       if (userData) {
         setMedicines(userData.medicines);
         setSymptoms(userData.symptoms);
         setTasks(userData.tasks);
       } else {
-        // New user - load placeholder data
         setMedicines(getMedicines());
         setSymptoms(getSymptomLogs());
         setTasks(getTasks());
@@ -153,7 +147,6 @@ function App() {
     }
   }, []);
 
-  // Persist data whenever it changes
   useEffect(() => {
     if (isLoggedIn && profileComplete && patientId) {
       saveData({ medicines, symptoms, tasks }, patientId);
@@ -164,8 +157,6 @@ function App() {
     setUserEmail(email);
     setToken(token);
     setIsLoggedIn(true);
-
-    // If the user already completed their profile, restore it from the DB
     if (backendUser.profileComplete) {
       const user: PatientUser = {
         email: backendUser.email,
@@ -179,7 +170,6 @@ function App() {
       setPatientId(backendUser._id);
       setProfileComplete(true);
 
-      // Load user-specific data
       const userData = loadData(backendUser._id);
       if (userData) {
         setMedicines(userData.medicines);
@@ -203,8 +193,7 @@ function App() {
     setCurrentUser(user);
     setPatientId(id);
     setProfileComplete(true);
-    
-    // Load placeholder data for new user
+  
     const existingData = loadData(id);
     if (!existingData) {
       setMedicines(getMedicines());
@@ -212,7 +201,6 @@ function App() {
       setTasks(getTasks());
     }
     
-    // Save session to localStorage
     const token = getToken();
     if (token) {
       saveSession({ token, email: userEmail, user, patientId: id });
@@ -222,7 +210,6 @@ function App() {
   const handleLogout = () => {
     setCurrentUser(null);
     setIsLoggedIn(false);
-    // Reset data on logout to empty arrays
     setMedicines([]);
     setSymptoms([]);
     setTasks([]);
@@ -230,14 +217,13 @@ function App() {
     setUserEmail('');
     setPatientId(null);
     setToken(null);
-    clearSession(); // Clear persisted session (but not user data)
+    clearSession(); 
     setCurrentPage('dashboard');
   };
 
   const handleUpdateProfile = (updatedUser: PatientUser) => {
     setCurrentUser(updatedUser);
     
-    // Update session storage with new profile data
     const token = getToken();
     if (token && patientId) {
       saveSession({ token, email: userEmail, user: updatedUser, patientId });
@@ -264,7 +250,15 @@ function App() {
     {
       section: 'Tools',
       items: [
+        {
+          id: 'referral',
+          label: 'Referral',
+          icon: <DashboardIcon />, 
+          active: currentPage === 'referral',
+          onClick: () => setCurrentPage('referral')
+        },
         { id: 'profile', label: 'Profile', icon: <ProfileIcon />, active: currentPage === 'profile', onClick: () => setCurrentPage('profile') },
+        
       ]
     }
   ];
@@ -318,7 +312,10 @@ function App() {
               patientId={patientId}
             />
           )}
+
           {currentPage === 'profile' && <Profile user={currentUser!} onUpdateProfile={handleUpdateProfile} />}
+          {currentPage === 'referral' && <Referral />}
+
         </div>
       </div>
     </div>
@@ -326,3 +323,7 @@ function App() {
 }
 
 export default App;
+
+
+
+
